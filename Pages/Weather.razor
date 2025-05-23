@@ -1,0 +1,93 @@
+﻿@page "/Copilot"
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+
+<h3>Simulación de Ascensor</h3>
+
+@if (!emergencyLight)
+{
+    <div>
+        <h4>Piso actual: @currentFloor</h4>
+
+        <div>
+            @for (int i = 0; i <= 5; i++)
+            {
+                <button @onclick="() => MoveElevator(i)" disabled="@isMoving">Piso @i</button>
+            }
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <button @onclick="ToggleEmergencyCall" disabled="@isMoving">@EmergencyCallText</button>
+            <button @onclick="ActivateEmergencyLight" disabled="@isMoving">Luz de emergencia</button>
+        </div>
+    </div>
+}
+else
+{
+    <div style="background-color: white; height: 100vh; display: flex; justify-content: center; align-items: center;">
+        <button @onclick="DeactivateEmergencyLight">Restablecer</button>
+    </div>
+}
+
+@code {
+    private int currentFloor = 0;
+    private bool isCalling = false;
+    private bool emergencyLight = false;
+    private bool isMoving = false;
+
+    private string EmergencyCallText => isCalling ? "Cortar" : "Llamada de emergencia";
+
+    private async Task MoveElevator(int targetFloor)
+    {
+        if (emergencyLight || isMoving || targetFloor == currentFloor) return;
+
+        isMoving = true;
+
+        while (currentFloor != targetFloor)
+        {
+            if (currentFloor < targetFloor)
+                currentFloor++;
+            else
+                currentFloor--;
+
+            StateHasChanged();
+            await Task.Delay(1000);
+        }
+
+        await JSRuntime.InvokeVoidAsync("playSound");
+        isMoving = false;
+    }
+
+    private async Task ToggleEmergencyCall()
+    {
+        isCalling = !isCalling;
+
+        if (isCalling)
+        {
+            try
+            {
+                var token = await Http.GetStringAsync("/token");
+                Console.WriteLine($"Token recibido: {token}");
+                // Aquí iría la lógica para iniciar la llamada con ACS
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener token: {ex.Message}");
+            }
+        }
+        else
+        {
+            // Lógica para cortar la llamada
+        }
+    }
+
+    private void ActivateEmergencyLight()
+    {
+        emergencyLight = true;
+    }
+
+    private void DeactivateEmergencyLight()
+    {
+        emergencyLight = false;
+    }
+}

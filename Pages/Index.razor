@@ -1,0 +1,72 @@
+﻿@page "/"
+
+
+
+<PageTitle>Elevator Simulator</PageTitle>
+
+<div class="elevator-container @(isEmergencyLightOn ? "emergency-light-active" : "")">
+    @if (isEmergencyLightOn)
+    {
+        <button class="restore-button" @onclick="ToggleEmergencyLight">💡</button>
+    }
+    else
+    {
+        <div class="elevator-panel">
+            <h1>Elevator Control</h1>
+
+            <div class="floor-display">
+                <span>Current Floor: @currentFloor</span>
+                @if (isMoving)
+                {
+                    <span class="movement-indicator">@(direction == Direction.Up ? "▲" : (direction == Direction.Down ? "▼" : ""))</span>
+                }
+            </div>
+
+            <div class="floor-buttons">
+                @for (int i = totalFloors - 1; i >= 0; i--)
+                {
+                    int floor = i; // Capture loop variable
+                    <button class="floor-button @(IsFloorSelected(floor) ? "selected" : "")"
+                            @onclick="() => RequestFloor(floor)"
+                            disabled="@(isMoving && targetFloor == floor)">
+                        @(floor == 0 ? "G" : floor.ToString())
+                    </button>
+                }
+            </div>
+
+            <div class="special-buttons">
+                <button class="emergency-call-button" @onclick="StartEmergencyCall">📞 Call</button>
+                <button class="emergency-light-button" @onclick="ToggleEmergencyLight">🚨 Light</button>
+            </div>
+
+            @if (showRtcControls)
+            {
+                <div class="rtc-controls">
+                    <h4>WebRTC Signaling (Manual)</h4>
+                    <p><strong>Status:</strong> @rtcStatus</p>
+                    <div>
+                        <label>My Offer/Answer SDP:</label>
+                        <textarea rows="4" style="width:100%;" @bind="localSdp" readonly></textarea>
+                    </div>
+                    <div>
+                        <label>Remote Offer/Answer SDP:</label>
+                        <textarea rows="4" style="width:100%;" @bind="remoteSdp"></textarea>
+                        <button @onclick="ProcessRemoteSdp" disabled="@string.IsNullOrEmpty(remoteSdp)">Process Remote SDP</button>
+                    </div>
+                    <div>
+                        <label>My ICE Candidates:</label>
+                        <textarea rows="4" style="width:100%;" @bind="localIceCandidates" readonly></textarea>
+                    </div>
+                    <div>
+                        <label>Remote ICE Candidates (paste one per line):</label>
+                        <textarea rows="4" style="width:100%;" @bind="remoteIceCandidatesInput"></textarea>
+                        <button @onclick="AddRemoteIceCandidates" disabled="@string.IsNullOrEmpty(remoteIceCandidatesInput)">Add Remote ICE</button>
+                    </div>
+                    <audio id="remoteAudio" autoplay></audio>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<audio id="arrivalSound" src="sounds/beep_short.ogg"></audio>
